@@ -375,55 +375,88 @@
         <section id="setup" class="acc-neutral">
             <div class="file-tag">05_setup.gradle</div>
             <h2>Configuração de Dependências</h2>
-            <p>Hoje precisamos das duas famílias de dependência juntas: Retrofit (rede) e Room (persistência), além da permissão de internet.</p>
+<p>Hoje precisamos das duas famílias de dependência juntas: Retrofit (rede) e Room (persistência), além da permissão de internet e da atualização do Version Catalog.</p>
 
-            <h3>A. Permissão de Rede (AndroidManifest.xml)</h3>
-            <p>Se você continuou o projeto da aula passada (Biblioteca com SQLite), essa permissão ainda não existe — insira a linha abaixo imediatamente acima da tag de abertura <code>&lt;application&gt;</code>:</p>
-            <div class="code-container">
-                <div class="code-header">
-                    <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
-                    <span class="fname">AndroidManifest.xml</span>
-                    <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                </div>
+<h3>A. Permissão de Rede (AndroidManifest.xml)</h3>
+<p>Se você continuou o projeto da aula passada (Biblioteca com SQLite), essa permissão ainda não existe — insira a linha abaixo imediatamente acima da tag de abertura <code>&lt;application&gt;</code>:</p>
+<div class="code-container">
+    <div class="code-header">
+        <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
+        <span class="fname">AndroidManifest.xml</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+    </div>
 <pre><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code></pre>
-            </div>
+</div>
 
-            <h3>B. Plugin KSP (necessário para o Room)</h3>
-            <div class="code-container">
-                <div class="code-header">
-                    <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
-                    <span class="fname">build.gradle.kts (Module :app)</span>
-                    <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                </div>
+<h3>B. Version Catalog (gradle/libs.versions.toml)</h3>
+<p>Declare as versões do KSP, Retrofit e Room, juntamente com suas bibliotecas e o plugin no catálogo:</p>
+<div class="code-container">
+    <div class="code-header">
+        <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
+        <span class="fname">gradle/libs.versions.toml</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+    </div>
+<pre><code>[versions]
+agp = "8.10.0"
+kotlin = "2.0.21"
+ksp = "2.0.21-1.0.28"
+retrofit = "2.9.0"
+room = "2.6.1"
+
+[libraries]
+# Retrofit + GSON
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+
+# Room
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }</code></pre>
+</div>
+
+<h3>C. Plugins (build.gradle.kts - Module :app)</h3>
+<p>Aplique o alias do plugin KSP no topo do arquivo do módulo da aplicação:</p>
+<div class="code-container">
+    <div class="code-header">
+        <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
+        <span class="fname">build.gradle.kts (Module :app)</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+    </div>
 <pre><code>plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }</code></pre>
-            </div>
+</div>
 
-            <div class="tip-box"><strong>O que o KSP faz de verdade:</strong> as anotações <code>@Entity</code>, <code>@Dao</code> e <code>@Database</code> sozinhas não fazem nada em tempo de execução — são só "marcações". O KSP (<em>Kotlin Symbol Processing</em>) lê essas marcações <strong>durante a compilação</strong> e gera, automaticamente, as classes Kotlin de verdade que implementam o SQL por trás delas (o equivalente ao <code>DatabaseHelper</code> que vocês escreveram à mão na aula passada). Por isso o app não compila sem o plugin: sem ele, as anotações ficam sem nenhuma implementação gerada por trás.</div>
+<div class="tip-box"><strong>O que o KSP faz de verdade:</strong> as anotações <code>@Entity</code>, <code>@Dao</code> e <code>@Database</code> sozinhas não fazem nada em tempo de execução — são só "marcações". O KSP (<em>Kotlin Symbol Processing</em>) lê essas marcações <strong>durante a compilação</strong> e gera, automaticamente, as classes Kotlin de verdade que implementam o SQL por trás delas (o equivalente ao <code>DatabaseHelper</code> que vocês escreveram à mão na aula passada). Por isso o app não compila sem o plugin: sem ele, as anotações ficam sem nenhuma implementação gerada por trás.</div>
 
-            <h3>C. Dependências</h3>
-            <div class="code-container">
-                <div class="code-header">
-                    <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
-                    <span class="fname">build.gradle.kts (Module :app)</span>
-                    <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
-                </div>
+<h3>D. Dependências (build.gradle.kts - Module :app)</h3>
+<p>Adicione as referências das bibliotecas apontando para o Version Catalog:</p>
+<div class="code-container">
+    <div class="code-header">
+        <span class="dots"><span class="dot d-api"></span><span class="dot d-db"></span><span class="dot d-async"></span></span>
+        <span class="fname">build.gradle.kts (Module :app)</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+    </div>
 <pre><code>dependencies {
     // Retrofit + GSON: consumo da Open Library API
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
 
     // Room: persistência local, agora automatizada
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 }</code></pre>
-            </div>
-        </section>
-
+</div>
         <section id="livecoding" class="acc-neutral">
             <div class="file-tag">06_livecoding/</div>
             <h2>Live Coding Passo a Passo — Biblioteca Sincronizada</h2>
